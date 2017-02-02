@@ -1,0 +1,95 @@
+Sub USAA_Reformat()
+'
+' USAA_Reformat Macro
+'
+
+'
+    ' Delete extra columns
+    Range("A:A,B:B,D:D,F:F").Select
+    Range("F1").Activate
+    Selection.Delete Shift:=xlToLeft
+    
+    ' Add Column Headers
+    Rows("1:1").Select
+    Selection.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+    Range("A1").Select
+    ActiveCell.FormulaR1C1 = "When"
+    Range("B1").Select
+    ActiveCell.FormulaR1C1 = "Where"
+    Range("C1").Select
+    ActiveCell.FormulaR1C1 = "Charge"
+    
+    ' Convert to table
+    Range("A1").Select
+    Range(Selection, Selection.End(xlToRight)).Select
+    Range(Selection, Selection.End(xlDown)).Select
+    ActiveSheet.ListObjects.Add(xlSrcRange, Selection, , xlYes).Name = _
+        "Table1"
+    Range("Table1[#All]").Select
+    ActiveSheet.ListObjects("Table1").TableStyle = "TableStyleMedium2"
+    
+    ' Invert Charges column
+    Range("D2").Select
+    ActiveCell.FormulaR1C1 = "=[@Charge]*-1"
+    Range("D2").Select
+    Range(Selection, Selection.End(xlDown)).Select
+    Selection.Copy
+    Range("C2").Select
+    Range(Selection, Selection.End(xlDown)).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Columns("D:D").Select
+    Application.CutCopyMode = False
+    Selection.Delete Shift:=xlToLeft
+    
+    ' Switch format of charge to currency
+    Columns("C:C").Select
+    Selection.Style = "Currency"
+    
+    ' Autofit Columns
+    Columns("A:C").Select
+    Columns("A:C").EntireColumn.AutoFit
+    
+    ' Delete Last week payment
+    Range("C1").Select
+    Cells.Find(What:="USAA CREDIT", After:=ActiveCell, LookIn:=xlFormulas, _
+        LookAt:=xlPart, SearchOrder:=xlByRows, SearchDirection:=xlNext, _
+        MatchCase:=False, SearchFormat:=False).Activate
+    Selection.EntireRow.Delete
+    
+    ' Adding Sum cell
+    Range("C1").Select
+    Selection.End(xlDown).Select
+    Selection.Offset(1, 0).Select
+    Selection.FormulaR1C1 = "=SUM(Table1[Charge])"
+    
+    ' Conditional Formatting
+    Range("C2").Select
+    Range("Table1[Charge]").Select
+    Selection.FormatConditions.AddColorScale ColorScaleType:=3
+    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    Selection.FormatConditions(1).ColorScaleCriteria(1).Type = _
+        xlConditionValueLowestValue
+    With Selection.FormatConditions(1).ColorScaleCriteria(1).FormatColor
+        .Color = 8109667
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions(1).ColorScaleCriteria(2).Type = _
+        xlConditionValuePercentile
+    Selection.FormatConditions(1).ColorScaleCriteria(2).Value = 50
+    With Selection.FormatConditions(1).ColorScaleCriteria(2).FormatColor
+        .Color = 8711167
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions(1).ColorScaleCriteria(3).Type = _
+        xlConditionValueHighestValue
+    With Selection.FormatConditions(1).ColorScaleCriteria(3).FormatColor
+        .Color = 7039480
+        .TintAndShade = 0
+    End With
+    
+    Range("C1").Select
+    Range("Table1[#All]").Select
+    Selection.Copy
+    MsgBox "Contents copied to clipboard."
+End Sub
